@@ -266,6 +266,30 @@ class TechnicalAnalysis:
         s2 = round((pivot - (High - Low)),2)
         s3 = round((Low - 2*(High - pivot)),2)
         return (pivot,r1,r2,r3,s1,s2,s3)
+    
+    def calculate_rsi(self,ohlc_df, window=14):
+        
+        close=ohlc_df['Close'].copy()
+        
+        delta = close.diff()  # Difference in prices
+        gain = delta.where(delta > 0, 0)
+        loss = -delta.where(delta < 0, 0)
+        
+        # Using exponentially weighted mean to smooth values
+        avg_gain = gain.ewm(alpha=1/window, min_periods=window).mean()
+        avg_loss = loss.ewm(alpha=1/window, min_periods=window).mean()
+        
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    
+    
+    def calculate_vwap(self,ohlc_df):
+        df=ohlc_df.copy()
+        # df['VWAP'] = (df['Volume'] * (df['High'] + df['Low'] + df['Close']) / 3).cumsum() / df['Volume'].cumsum()
+        vwap = (df['Volume'] * (df['High'] + df['Low'] + df['Close']) / 3).cumsum() / df['Volume'].cumsum()
+
+        return vwap
 
     def trend(self,ohlc_df,n):
         "function to assess the trend by analyzing each candle"
@@ -280,7 +304,7 @@ class TechnicalAnalysis:
                 return "downtrend"
         else:
             return None
-
+ 
     def res_sup(self,ohlc_df,ohlc_day):
         """calculates Closest resistance and support levels for a given candle"""
         level = ((ohlc_df["Close"][-1] + ohlc_df["Open"].iloc[-1])/2 + (ohlc_df["High"].iloc[-1] + ohlc_df["Low"].iloc[-1])/2)/2
@@ -328,6 +352,10 @@ class TechnicalAnalysis:
             candle="bullish_harami"
         if self.harami_pattern(ohlc_df)['bearish_harami'].iloc[-1]==True:
             candle="bearish_harami"    
+        if self.tweezer_tops_bottoms(ohlc_df)['tweezer_tops'].iloc[-1]==True:
+            candle='tweezer_tops'
+        if self.tweezer_tops_bottoms(ohlc_df)['tweezer_bottoms'].iloc[-1]==True:
+            candle='tweezer_bottoms'
             
         return candle
     
@@ -394,5 +422,39 @@ class TechnicalAnalysis:
             and ohlc_df["Close"].iloc[-1] > ohlc_df["High"].iloc[-2] \
             and ohlc_df["Open"].iloc[-1] < ohlc_df["Low"].iloc[-2]:
             pattern = "engulfing_bullish"
+            
+        if self.candle_type(ohlc_df) == "Bullish_engulfing":
+            pattern = "bullish_engulfing"
+
+        if self.candle_type(ohlc_df) == "Bearish_engulfing":
+            pattern = "bearish_engulfing"
+            
+        if self.candle_type(ohlc_df) == "Three_white_soldiers":
+            pattern = "three_white_soldiers"
+            
+        if self.candle_type(ohlc_df) == "three_black_crows":
+            pattern = "three_black_crows"
+            
+        if self.candle_type(ohlc_df) == "dark_cloud_cover":
+            pattern = "dark_cloud_cover"
+            
+        if self.candle_type(ohlc_df) == "piercing_pattern":
+            pattern = "piercing_pattern"
+            
+        if self.candle_type(ohlc_df) == "bullish_harami":
+            pattern = "bullish_harami"
+            
+        if self.candle_type(ohlc_df) == "bearish_harami":
+            pattern = "bearish_harami"
+            
+        if self.candle_type(ohlc_df) == "tweezer_tops":
+            pattern = "tweezer_tops"
+            
+        if self.candle_type(ohlc_df) == "tweezer_bottoms":
+            pattern = "tweezer_bottoms"    
+                    
 
         return "Significance - {}, Pattern - {}".format(signi,pattern)
+    
+
+    
